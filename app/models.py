@@ -10,6 +10,9 @@ class Note(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, nullable=False)
     content = Column(String, nullable=False)
+    owner_id = Column(Integer, ForeignKey("users.id"))
+
+    owner = relationship("User", back_populates="notes")
 
 class User(Base):
     __tablename__ = "users"

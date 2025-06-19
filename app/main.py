@@ -9,6 +9,13 @@ from fastapi.security import OAuth2PasswordRequestForm
 from auth import authenticate_user, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
 from users import router as users_router
 from datetime import timedelta
+from . import schemas, crud
+from .dependencies import get_db
+from .auth import get_current_user
+from .models import User
+from fastapi import APIRouter, Depends
+
+
 
 
 
@@ -18,6 +25,9 @@ from .database import AsyncSessionLocal, engine, Base
 
 app = FastAPI()
 app.include_router(users_router)
+router = APIRouter()
+
+
 
 
 @app.on_event("startup")
@@ -84,3 +94,23 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+@router.post("/notes", response_model=schemas.NoteOut)
+async def create_note(note: schemas.NoteCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return await crud.create_note(db, note, current_user.id)
+
+@router.get("/notes", response_model=list[schemas.NoteOut])
+async def list_notes(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return await crud.get_notes(db, current_user.id)
+
+@router.get("/notes/{note_id}", response_model=schemas.NoteOut)
+async def read_note(note_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return await crud.get_note(db, note_id, current_user.id)
+
+@router.put("/notes/{note_id}", response_model=schemas.NoteOut)
+async def update_note(note_id: int, note: schemas.NoteUpdate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return await crud.update_note(db, note_id, note, current_user.id)
+
+@router.delete("/notes/{note_id}")
+async def delete_note(note_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return await crud.delete_note(db, note_id, current_user.id)

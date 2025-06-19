@@ -8,46 +8,34 @@ from .security import get_password_hash, verify_password
 
 
 # Создание заметки
-async def create_note(db: AsyncSession, note: schemas.NoteCreate, user: models.User):
-    new_note = models.Note(**note.dict(), owner_id=user.id)
+async def create_note(db: AsyncSession, note: schemas.NoteCreate, user_id: int):
+    new_note = models.Note(**note.dict(), owner_id=user_id)
     db.add(new_note)
     await db.commit()
     await db.refresh(new_note)
     return new_note
 
-
-
-# Получение всех заметок
-async def get_notes(db: AsyncSession):
-    result = await db.execute(select(models.Note))
+async def get_notes(db: AsyncSession, user_id: int):
+    result = await db.execute(select(models.Note).where(models.Note.owner_id == user_id))
     return result.scalars().all()
 
+async def get_note(db: AsyncSession, note_id: int, user_id: int):
+    result = await db.execute(select(models.Note).where(models.Note.id == note_id, models.Note.owner_id == user_id))
+    note = result.scalars().first()
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    return note
 
-# Регистрация пользователя
-async def create_user(db: AsyncSession, user: schemas.UserCreate):
-    hashed_password = get_password_hash(user.password)
-    new_user = models.User(username=user.username, hashed_password=hashed_password)
-    db_user = models.User(
-        username=user.username,
-        password=hashed_password,
-        role="user"
-    )
-    db.add(new_user)
+async def update_note(db: AsyncSession, note_id: int, note_update: schemas.NoteUpdate, user_id: int):
+    note = await get_note(db, note_id, user_id)
+    for field, value in note_update.dict().items():
+        setattr(note, field, value)
+    await db.commit()
+    await db.refresh(note)
+    return note
 
-    try:
-        await db.commit()
-        await db.refresh(new_user)
-        return new_user
-    except IntegrityError:
-        await db.rollback()
-        raise HTTPException(status_code=400, detail="Username already exists")
-
-
-# Аутентификация пользователя
-async def authenticate_user(db: AsyncSession, username: str, password: str):
-    result = await db.execute(select(models.User).where(models.User.username == username))
-    user = result.scalar_one_or_none()
-    if user and verify_password(password, user.password):  # пароль из БД теперь хешированный
-        return user
-    return None
-
+async def delete_note(db: AsyncSession, note_id: int, user_id: int):
+    note = await get_note(db, note_id, user_id)
+    await db.delete(note)
+    await db.commit()
+    return {"detail": "Note deleted"}
