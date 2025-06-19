@@ -1,17 +1,16 @@
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
 
-# Без пароля
-DATABASE_URL = "postgresql+asyncpg://postgres@localhost/notes_db"
+DATABASE_URL = "postgresql+asyncpg://user:password@localhost/dbname"
 
 engine = create_async_engine(DATABASE_URL, echo=True)
 
-AsyncSessionLocal = sessionmaker(
+async_session = sessionmaker(
     bind=engine,
     class_=AsyncSession,
     expire_on_commit=False
 )
 
 Base = declarative_base()
+
 

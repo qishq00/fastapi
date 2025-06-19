@@ -27,7 +27,13 @@ async def get_notes(db: AsyncSession):
 async def create_user(db: AsyncSession, user: schemas.UserCreate):
     hashed_password = get_password_hash(user.password)
     new_user = models.User(username=user.username, hashed_password=hashed_password)
+    db_user = models.User(
+        username=user.username,
+        password=hashed_password,
+        role="user"
+    )
     db.add(new_user)
+
     try:
         await db.commit()
         await db.refresh(new_user)

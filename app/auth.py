@@ -3,6 +3,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from .models import User
 
 # Конфигурация
 SECRET_KEY = "supersecretkey"  # 🔐 Замени на реальный в .env
@@ -64,3 +65,13 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     if user is None:
         raise credentials_exception
     return user
+
+def require_role(required_role: str):
+    def role_checker(current_user: User = Depends(get_current_user)):
+        if current_user.role != required_role:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not enough permissions"
+            )
+        return current_user
+    return role_checker
