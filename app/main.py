@@ -4,7 +4,11 @@ from typing import List
 from app.security import create_access_token
 from datetime import timedelta
 from app.security import get_current_user
-from .auth import get_current_user 
+from .security import get_current_user 
+from fastapi.security import OAuth2PasswordRequestForm
+from auth import authenticate_user, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from users import router as users_router
+from datetime import timedelta
 
 
 
@@ -13,6 +17,8 @@ from . import models, schemas, crud
 from .database import AsyncSessionLocal, engine, Base
 
 app = FastAPI()
+app.include_router(users_router)
+
 
 @app.on_event("startup")
 async def on_startup():
@@ -65,3 +71,16 @@ async def read_notes(
     current_user: models.User = Depends(get_current_user)
 ):
     return await crud.get_notes(db)
+
+@app.post("/login")
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = authenticate_user(form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(status_code=400, detail="Неверное имя пользователя или пароль")
+    
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user["username"]},
+        expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
