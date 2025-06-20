@@ -20,3 +20,4 @@ async def list_users(
 ):
     result = await db.execute(select(models.User))
     return result.scalars().all()
+

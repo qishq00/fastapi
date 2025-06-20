@@ -14,6 +14,7 @@ from .dependencies import get_db
 from .auth import get_current_user
 from .models import User
 from fastapi import APIRouter, Depends
+from fastapi import Query
 
 
 
@@ -48,9 +49,15 @@ async def create_note(
     return await crud.create_note(db, note, current_user)
 
 
-@app.get("/notes", response_model=List[NoteRead])
-async def read_notes(db: AsyncSession = Depends(get_db)):
-    return await crud.get_notes(db)
+@app.get("/notes", response_model=list[schemas.NoteOut])
+async def read_notes(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(10, ge=1),
+    search: str = Query("", alias="search"),
+    db: AsyncSession = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    return await crud.get_notes(db, user_id=current_user.id, skip=skip, limit=limit, search=search)
 
 @app.post("/register", response_model=UserOut)
 async def register_user(user: UserCreate, db: AsyncSession = Depends(get_db)):

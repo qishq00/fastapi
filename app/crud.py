@@ -39,3 +39,15 @@ async def delete_note(db: AsyncSession, note_id: int, user_id: int):
     await db.delete(note)
     await db.commit()
     return {"detail": "Note deleted"}
+
+# app/crud.py
+
+async def get_notes(db: AsyncSession, user_id: int, skip: int = 0, limit: int = 10, search: str = ""):
+    query = select(models.Note).where(models.Note.owner_id == user_id)
+
+    if search:
+        query = query.where(models.Note.content.ilike(f"%{search}%"))
+
+    query = query.offset(skip).limit(limit)
+    result = await db.execute(query)
+    return result.scalars().all()

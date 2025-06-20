@@ -9,6 +9,7 @@ class NoteCreate(NoteBase):
 
 class NoteRead(NoteBase):
     id: int
+    owner_id: int
 
     class Config:
         from_attributes = True  
