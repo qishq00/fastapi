@@ -3,4 +3,6 @@ sqlalchemy
 asyncpg
 psycopg2-binary
 pydantic
-uvocorn
+uvicorn
+python-jose[cryptography]
+passlib[bcrypt]
