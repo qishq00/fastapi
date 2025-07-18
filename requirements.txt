@@ -6,3 +6,6 @@ pydantic
 uvicorn
 python-jose[cryptography]
 passlib[bcrypt]
+fastapi
+uvicorn
+celery[redis]==5.3.6

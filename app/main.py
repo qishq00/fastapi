@@ -15,7 +15,8 @@ from .auth import get_current_user
 from .models import User
 from fastapi import APIRouter, Depends
 from fastapi import Query
-
+from app.tasks import send_email_task
+from app.celery_worker import send_email_task
 
 
 
@@ -121,3 +122,25 @@ async def update_note(note_id: int, note: schemas.NoteUpdate, db: AsyncSession =
 @router.delete("/notes/{note_id}")
 async def delete_note(note_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     return await crud.delete_note(db, note_id, current_user.id)
+
+@app.post("/send-email/")
+def trigger_email(email: str):
+    task = send_email_task.delay(email)
+    return {
+        "message": "Задача отправки email поставлена в очередь",
+        "task_id": task.id
+    }
+
+@app.post("/trigger-task")
+def trigger_task(email: str, user=Depends(get_current_user)):
+    task = send_email_task.delay(email)
+    return {"message": "Task started", "task_id": task.id}
+
+@app.get("/")
+def root():
+    return {"message": "FastAPI + Celery + Redis работает!"}
+
+@app.post("/send-email/")
+def send_email(email: str):
+    task = send_email_task.delay(email)  # Запускаем задачу в фоне
+    return {"task_id": task.id, "status": "queued"}
